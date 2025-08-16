@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blur Music Player</title>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    body, html {
+        height: 100%;
+        font-family: Arial, sans-serif;
+        overflow: hidden;
+    }
+
+    /* Video nền (scale theo màn hình) */
+    #bg-video {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        min-width: 100%;
+        min-height: 100%;
+        transform: translate(-50%, -50%);
+        object-fit: cover;
+        z-index: -2;
+    }
+
+    /* Lớp overlay mờ */
+    .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.2);
+        z-index: -1;
+    }
+
+    /* Khung blur */
+    .player-container {
+        position: absolute;
+        bottom: 15%;
+        left: 50%;
+        transform: translateX(-50%);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        padding: 20px;
+        width: 450px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        box-shadow: 0 0 30px rgba(0,0,0,0.4);
+    }
+
+    /* Ảnh cover */
+    .cover {
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 10px;
+        flex-shrink: 0;
+    }
+
+    /* Nội dung bên phải */
+    .info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        color: white;
+    }
+
+    .title {
+        font-size: 1.2rem;
+        margin-bottom: 10px;
+    }
+
+    /* Thanh tiến trình */
+    .progress-container {
+        width: 100%;
+        height: 5px;
+        background: rgba(255,255,255,0.3);
+        cursor: pointer;
+        border-radius: 5px;
+        margin: 5px 0;
+    }
+    .progress {
+        height: 5px;
+        background: white;
+        width: 0%;
+        border-radius: 5px;
+    }
+
+    /* Điều khiển */
+    .controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 5px;
+    }
+    button {
+        background: none;
+        border: none;
+        color: white;
+        font-size: 1.2rem;
+        cursor: pointer;
+    }
+
+    .time {
+        font-size: 0.8rem;
+    }
+
+    .volume {
+        width: 80px;
+    }
+</style>
+</head>
+<body>
+
+<!-- Video nền -->
+<video autoplay muted loop id="bg-video">
+    <source src="video.mp4" type="video/mp4">
+</video>
+<div class="overlay"></div>
+<button id="add-song-btn" style="position: fixed; top: 10px; right: 10px; padding: 8px 12px; background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 5px; cursor: pointer;">➕ Thêm nhạc</button>
+<!-- Khung Player -->
+<div class="player-container">
+    <img id="cover-img" src="" alt="Cover" class="cover">
+    <div class="info">
+        <div class="title" id="title">Loading...</div>
+        <div class="progress-container" id="progress-container">
+            <div class="progress" id="progress"></div>
+        </div>
+        <div class="controls">
+            <button id="prev">⏮</button>
+            <button id="play">▶</button>
+            <button id="next">⏭</button>
+            <span class="time" id="current">0:00</span> / 
+            <span class="time" id="duration">0:00</span>
+            <input type="range" id="volume" class="volume" min="0" max="1" step="0.01" value="1">
+        </div>
+    </div>
+</div>
+<div id="popup" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); padding: 20px; border-radius: 10px; color: white; z-index: 1000;">
+    <h3>Thêm bài hát mới</h3>
+    <input type="text" id="song-title" placeholder="Tên bài hát" style="width:100%; padding:5px; margin:5px 0;">
+    <input type="file" id="song-file" accept="audio/*" style="margin:5px 0;">
+    <input type="file" id="cover-file" accept="image/*" style="margin:5px 0;">
+    <br>
+    <button id="upload-song">Tải lên</button>
+    <button id="close-popup">Hủy</button>
+</div>
+<script>
+    const playBtn = document.getElementById('play');
+    const prevBtn = document.getElementById('prev');
+    const nextBtn = document.getElementById('next');
+    const progressContainer = document.getElementById('progress-container');
+    const progress = document.getElementById('progress');
+    const currentTimeEl = document.getElementById('current');
+    const durationEl = document.getElementById('duration');
+    const volumeSlider = document.getElementById('volume');
+    const coverImg = document.getElementById('cover-img');
+    const titleEl = document.getElementById('title');
+
+    let playlist = [];
+    let currentSongIndex = 0;
+    let isPlaying = false;
+    const audio = new Audio();
+
+    // Load từ playlist.json
+    fetch('playlist.json')
+        .then(res => res.json())
+        .then(data => {
+            playlist = data;
+            loadSong(currentSongIndex);
+        });
+
+    function loadSong(index) {
+        const song = playlist[index];
+        audio.src = song.src;
+        titleEl.textContent = song.title;
+        coverImg.src = song.cover;
+        audio.load();
+    }
+
+    function togglePlay() {
+        if (isPlaying) {
+            audio.pause();
+            playBtn.textContent = '▶';
+        } else {
+            audio.play();
+            playBtn.textContent = '⏸';
+        }
+        isPlaying = !isPlaying;
+    }
+
+    function prevSong() {
+        currentSongIndex = (currentSongIndex - 1 + playlist.length) % playlist.length;
+        loadSong(currentSongIndex);
+        audio.play();
+        isPlaying = true;
+        playBtn.textContent = '⏸';
+    }
+
+    function nextSong() {
+        currentSongIndex = (currentSongIndex + 1) % playlist.length;
+        loadSong(currentSongIndex);
+        audio.play();
+        isPlaying = true;
+        playBtn.textContent = '⏸';
+    }
+
+    audio.addEventListener('timeupdate', () => {
+        const progressPercent = (audio.currentTime / audio.duration) * 100;
+        progress.style.width = progressPercent + '%';
+        currentTimeEl.textContent = formatTime(audio.currentTime);
+        durationEl.textContent = formatTime(audio.duration);
+    });
+
+    progressContainer.addEventListener('click', (e) => {
+        const width = progressContainer.clientWidth;
+        const clickX = e.offsetX;
+        const duration = audio.duration;
+        audio.currentTime = (clickX / width) * duration;
+    });
+
+    volumeSlider.addEventListener('input', () => {
+        audio.volume = volumeSlider.value;
+    });
+
+    audio.addEventListener('ended', nextSong);
+
+    function formatTime(sec) {
+        if (isNaN(sec)) return "0:00";
+        const minutes = Math.floor(sec / 60);
+        const seconds = Math.floor(sec % 60).toString().padStart(2, '0');
+        return `${minutes}:${seconds}`;
+    }
+
+    playBtn.addEventListener('click', togglePlay);
+    prevBtn.addEventListener('click', prevSong);
+    nextBtn.addEventListener('click', nextSong);
+</script>
+<script>
+document.getElementById('add-song-btn').addEventListener('click', () => {
+    document.getElementById('popup').style.display = 'block';
+});
+
+document.getElementById('close-popup').addEventListener('click', () => {
+    document.getElementById('popup').style.display = 'none';
+});
+
+document.getElementById('upload-song').addEventListener('click', () => {
+    const title = document.getElementById('song-title').value.trim();
+    const songFile = document.getElementById('song-file').files[0];
+    const coverFile = document.getElementById('cover-file').files[0];
+
+    if (!title || !songFile || !coverFile) {
+        alert("Vui lòng nhập đầy đủ thông tin!");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("song", songFile);
+    formData.append("cover", coverFile);
+
+    fetch("upload_song.php", {
+        method: "POST",
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message);
+        if (data.success) {
+            playlist.push({ src: data.songPath, title: title, cover: data.coverPath });
+            currentSongIndex = playlist.length - 1;
+            loadSong(currentSongIndex);
+            audio.play();
+            isPlaying = true;
+            playBtn.textContent = '⏸';
+        }
+        document.getElementById('popup').style.display = 'none';
+    });
+});
+</script>
+</body>
+</html>
