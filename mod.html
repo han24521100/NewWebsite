@@ -46,6 +46,11 @@
     .note{max-width:1000px;margin:28px auto 0;padding:0 16px;color:#77003f;text-align:center}
     .card { cursor: pointer; }
     .card:focus { outline: 3px solid #ffa0c2; outline-offset: 3px; }
+    .search-col{display:flex;flex-direction:column;gap:8px}
+    .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .filters .tab{background:transparent;border:0;color:#4a0033;padding:6px 10px;border-radius:999px;font-weight:800;cursor:pointer}
+    .filters .tab.active{background:#ffd0e1;box-shadow:var(--shadow)}
+    .filters .tab:hover{background:#ffebf2}
   </style>
 </head>
 <body>
@@ -66,9 +71,17 @@
   </header>
 
   <div class="toolbar">
-    <div class="search">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.2-4.2m1.7-5.3a7 7 0 11-14 0 7 7 0 0114 0z" stroke="#222" stroke-width="2" stroke-linecap="round"/></svg>
-      <input id="q" placeholder="Tìm bài viết... (tiêu đề, tóm tắt)" />
+    <div class="search-col">
+      <div class="filters" id="filters">
+        <button class="tab" data-abc="">Tất cả</button>
+        <button class="tab" data-abc="yeu-cau">Yêu cầu</button>
+        <button class="tab" data-abc="mod-bth">Mod bình thường</button>
+        <button class="tab" data-abc="chuc-nang">Chức năng</button>
+      </div>
+      <div class="search">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.2-4.2m1.7-5.3a7 7 0 11-14 0 7 7 0 0114 0z" stroke="#222" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="q" placeholder="Tìm bài viết... (tiêu đề, tóm tắt)" />
+      </div>
     </div>
     <div class="count"><span id="count">0</span> bài viết</div>
   </div>
@@ -81,8 +94,20 @@
     const REFRESH_WINDOW = 60_000; // 1 phút
     const bust = Math.floor(Date.now() / REFRESH_WINDOW);
 
+    // ====== helpers DOM ======
     const $ = (s, r=document)=>r.querySelector(s);
-    const grid = $('#grid'), q = $('#q'), countEl = $('#count');
+    const grid = $('#grid'), q = $('#q'), countEl = $('#count'), filtersEl = $('#filters');
+
+    // ====== phân loại theo [ ... ] trong title ======
+    const CAT_LABEL = { 'yeu-cau':'Yêu cầu', 'mod-bth':'Mod bình thường', 'chuc-nang':'Chức năng' };
+    const VALID = new Set(Object.keys(CAT_LABEL));
+    function rmAccents(str){ return String(str||'').normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+    function getCategoryFromTitle(title){
+      const m = /\[([^\]]+)\]/.exec(String(title||''));
+      if (!m) return 'chuc-nang'; // không có ngoặc
+      const inside = rmAccents(m[1]).toLowerCase();
+      return inside.includes('yeu') ? 'yeu-cau' : 'mod-bth';
+    }
 
     function skeletonCard(){
       const wrap = document.createElement('article');
@@ -103,76 +128,101 @@
         </div>`;
       return wrap;
     }
+    function toTitle(slug){ return String(slug || '').replace(/[-_]/g,' ').trim(); }
 
-    function toTitle(slug){
-      return String(slug || '').replace(/[-_]/g,' ').trim();
-    }
-
+    // đọc json → list
     function fromJSON(obj){
-    // obj: { "mod-1": { title, img, info, link }, ... }
-    return Object.entries(obj).map(([slug, v = {}]) => ({
-        slug,
-        title: v.title ? String(v.title) : toTitle(slug), // ← dùng title từ JSON
-        img: v.img || 'ico.jpg',
-        info: v.info ? String(v.info) : '',
-        href: `product.html?pminmod=${encodeURIComponent(slug)}`
-    }));
-    }
-
-    function render(list){
-        grid.innerHTML='';
-        list.forEach((it, idx)=>{
-            const card = document.createElement('article');
-            card.className='card';
-
-            card.innerHTML=`
-            <div class="thumb">
-                <img loading="lazy" src="${it.img}" alt="${it.title}">
-                <div class="badge">Bài #${String(idx+1).padStart(2,'0')}</div>
-            </div>
-            <div class="body">
-                <div class="title">${it.title}</div>
-                <div class="meta"><span class="chip">Tin mới</span><span class="chip">Đọc chi tiết</span></div>
-                <div class="info">${it.info}</div>
-            </div>
-            <div class="footer">
-                <a class="btn btn-outline" href="${it.href}">Xem chi tiết</a>
-                <a class="btn btn-primary" href="${it.href}">Đọc ngay</a>
-            </div>`;
-
-            // >>> Biến cả thẻ card thành link
-            card.dataset.href = it.href;          // lưu link cần đi tới
-            card.setAttribute('role','link');     // hỗ trợ trợ năng
-            card.tabIndex = 0;                    // cho phép focus bằng bàn phím
-
-            // Click bất kỳ chỗ nào trên card (trừ khi click vào <a> bên trong)
-            card.addEventListener('click', (e) => {
-            if (e.target.closest('a')) return;              // để link/nút bên trong hoạt động bình thường
-            window.location.href = card.dataset.href;       // điều hướng
-            });
-
-            // Hỗ trợ Enter/Space khi card đang focus
-            card.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                window.location.href = card.dataset.href;
-            }
-            });
-
-            grid.appendChild(card);
-        });
-        countEl.textContent = list.length;
-        }
-
-
-    function attachSearch(all){
-      q.addEventListener('input', ()=>{
-        const kw = q.value.trim().toLowerCase();
-        if(!kw){ render(all); return; }
-        render(all.filter(x => x.title.toLowerCase().includes(kw) || x.info.toLowerCase().includes(kw)));
+      return Object.entries(obj).map(([slug, v = {}]) => {
+        const title = v.title ? String(v.title) : toTitle(slug);
+        return {
+          slug,
+          title,
+          cat: getCategoryFromTitle(title),
+          img: v.img || 'ico.jpg',
+          info: v.info ? String(v.info) : '',
+          href: `product.html?pminmod=${encodeURIComponent(slug)}`
+        };
       });
     }
 
+    function render(list){
+      grid.innerHTML='';
+      list.forEach((it, idx)=>{
+        const card = document.createElement('article');
+        card.className='card';
+        card.innerHTML=`
+          <div class="thumb">
+            <img loading="lazy" src="${it.img}" alt="${it.title}">
+            <div class="badge">Bài #${String(idx+1).padStart(2,'0')}</div>
+          </div>
+          <div class="body">
+            <div class="title">${it.title}</div>
+            <div class="meta">
+              <span class="chip">${CAT_LABEL[it.cat] || it.cat}</span>
+              <span class="chip">Đọc chi tiết</span>
+            </div>
+            <div class="info">${it.info}</div>
+          </div>
+          <div class="footer">
+            <a class="btn btn-outline" href="${it.href}">Xem chi tiết</a>
+            <a class="btn btn-primary" href="${it.href}">Đọc ngay</a>
+          </div>`;
+
+        // Cả card bấm được
+        card.dataset.href = it.href;
+        card.setAttribute('role','link');
+        card.tabIndex = 0;
+        card.addEventListener('click', e => { if (!e.target.closest('a')) location.href = card.dataset.href; });
+        card.addEventListener('keydown', e => { if (e.key==='Enter'||e.key===' ') { e.preventDefault(); location.href = card.dataset.href; } });
+
+        grid.appendChild(card);
+      });
+      countEl.textContent = list.length;
+    }
+
+    // ====== state + filter ======
+    let MASTER = [], currentAbc = '', currentKW = '';
+
+    function setActiveTab(val){
+      [...filtersEl.querySelectorAll('.tab')].forEach(b=>{
+        b.classList.toggle('active', (b.dataset.abc || '') === (val || ''));
+      });
+    }
+
+    function computeFiltered(){
+      let arr = MASTER.slice();
+      if (currentAbc && VALID.has(currentAbc)) arr = arr.filter(x => x.cat === currentAbc);
+      if (currentKW){
+        const kw = currentKW.toLowerCase();
+        arr = arr.filter(x => x.title.toLowerCase().includes(kw) || x.info.toLowerCase().includes(kw));
+      }
+      return arr;
+    }
+
+    function applyAndRender(){
+      render(computeFiltered());
+    }
+
+    // UI events
+    q.addEventListener('input', ()=>{
+      currentKW = q.value.trim().toLowerCase();
+      applyAndRender();
+    });
+
+    filtersEl.addEventListener('click', (e)=>{
+      const btn = e.target.closest('[data-abc]');
+      if (!btn) return;
+      currentAbc = (btn.dataset.abc || '');
+      setActiveTab(currentAbc);
+      // cập nhật URL ?abc=
+      const params = new URLSearchParams(location.search);
+      if (currentAbc) params.set('abc', currentAbc); else params.delete('abc');
+      const qs = params.toString();
+      history.replaceState({}, '', qs ? `${location.pathname}?${qs}` : location.pathname);
+      applyAndRender();
+    });
+
+    // ====== load ======
     async function load(){
       grid.innerHTML=''; for(let i=0;i<6;i++) grid.appendChild(skeletonCard());
       try{
@@ -180,13 +230,22 @@
         url.searchParams.set('t', bust);
         const res = await fetch(url, { cache:'no-store' });
         const data = await res.json();
-        const list = fromJSON(data);
-        render(list); attachSearch(list);
+        MASTER = fromJSON(data);
+
+        // đọc abc ban đầu từ URL
+        const p = new URLSearchParams(location.search);
+        const abc0 = (p.get('abc') || '').toLowerCase();
+        currentAbc = VALID.has(abc0) ? abc0 : '';
+        setActiveTab(currentAbc);
+
+        applyAndRender();
       }catch(e){
-        render([]); attachSearch([]);
+        MASTER = [];
+        applyAndRender();
       }
     }
     load();
   </script>
+
 </body>
 </html>
