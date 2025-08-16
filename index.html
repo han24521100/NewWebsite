@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Pmin Music Site</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <img src="background.jpg" class="background-img">
+    <!-- <div class="galaxy-overlay"></div> -->
+
+    <!-- Khung trung tâm chứa ảnh + sóng -->
+    <div class="center-box">
+      <img src="background.jpg" class="center-art">
+      <canvas id="visualizer"></canvas>
+    </div>
+
+    <div class="player">
+      <h1>Defause Music CRE SITE YTB PMINMOD</h1>
+      <audio id="audio" controls>
+        <source src="aura.mp3" type="audio/mpeg">
+        Trình duyệt không hỗ trợ phát nhạc.
+      </audio>
+        <!-- Nút mở popup -->
+        <div style="text-align: center; margin-top: 10px;">
+        <button onclick="document.getElementById('popup').style.display='flex'">Tuỳ chỉnh</button>
+        </div>
+
+    </div>
+
+    <script src="visualizer.js"></script>
+    <script>
+      function applyChanges() {
+        const title = document.getElementById('titleInput').value;
+        const audioFile = document.getElementById('audioInput').files[0];
+        const imageFile = document.getElementById('imageInput').files[0];
+
+        // Đổi tiêu đề
+        if (title) {
+          document.querySelector('.player h1').textContent = title;
+        }
+
+        // Đổi nhạc
+        if (audioFile) {
+          const audio = document.getElementById('audio');
+          audio.src = URL.createObjectURL(audioFile);
+          audio.load();
+        }
+
+        // Đổi ảnh nền
+        if (imageFile) {
+          const art = document.querySelector('.center-art');
+          art.src = URL.createObjectURL(imageFile);
+        }
+
+        document.getElementById('popup').style.display = 'none';
+      }
+    </script>
+    <!-- Popup tuỳ chỉnh -->
+    <div id="popup" class="popup">
+      <div class="popup-content">
+        <h2>Tuỳ chỉnh nhạc</h2>
+        <label>Tên nhạc:</label>
+        <input type="text" id="titleInput" placeholder="Nhập tên mới"><br><br>
+
+        <label>Chọn nhạc:</label>
+        <input type="file" id="audioInput" accept="audio/*"><br><br>
+
+        <label>Chọn ảnh nền:</label>
+        <input type="file" id="imageInput" accept="image/*"><br><br>
+
+        <button onclick="applyChanges()">Lưu</button>
+        <button onclick="document.getElementById('popup').style.display='none'">Đóng</button>
+      </div>
+    </div>
+  </body>
+
+</html>
