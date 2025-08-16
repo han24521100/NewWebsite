@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="theme-color" content="#ffdde8">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>PminMod | Chi tiết</title>
+  <link rel="icon" href="ico.jpg" type="image/x-icon" />
+  <style>
+    :root{
+      --bg:#ffdde8;--card:#1b1b1b;--cardSoft:#232323;--accentSoft:#ffb6d2;
+      --text:#f5f5f7;--muted:#c9c9d1;--radius:14px;--shadow:0 10px 25px rgba(0,0,0,.25)
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      font-family:system-ui,"Segoe UI",Roboto,Arial;
+      background:var(--bg);color:#4a0033;margin:0;padding:env(safe-area-inset-top) 0 60px
+    }
+    .wrap{max-width:1000px;margin:24px auto;padding:0 16px}
+    .btn{appearance:none;border:0;cursor:pointer;padding:10px 14px;border-radius:10px;font-weight:700;font-size:14px;display:inline-flex;align-items:center;gap:8px;text-decoration:none}
+    .btn-primary{color:#1b0a14;background:var(--accentSoft)}
+    .btn-outline{color:#fff;background:transparent;border:1px solid #3a3a3a}
+    .card{background:var(--card);color:var(--text);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);border:1px solid rgba(255,255,255,.06)}
+    .hero{aspect-ratio:16/9;background:#0e0e0e}
+    .hero img{width:100%;height:100%;object-fit:cover;display:block}
+    .pad{padding:16px}
+    .title{font-size:clamp(20px,2.2vw,28px);font-weight:800;margin:6px 0 2px}
+    .slug{opacity:.85;font-size:14px}
+    .noteBox{background:var(--cardSoft);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:14px;color:var(--text);margin-top:12px}
+    .noteBox h3{margin:0 0 8px;font-size:16px}
+    .noteBox ul{margin:0;padding-left:18px}
+    .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+    .muted{color:#7a0033}
+    @media (hover:none){ .card:hover{ transform:none } }
+    @media (prefers-reduced-motion: reduce){
+      *{animation:none!important;transition:none!important}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a href="mod.html" class="btn btn-outline">← Quay lại danh sách</a>
+
+    <div id="content" class="card" style="margin-top:12px;">
+      <!-- render bằng JS -->
+    </div>
+
+    <p class="muted" style="text-align:center;margin-top:14px">
+      Link tải: <a id="dltext" href="#" target="_blank" rel="noopener">tại đây</a>
+    </p>
+  </div>
+
+  <script>
+    const JSON_PATH = 'news.json';
+    const REFRESH_WINDOW = 60_000;              // làm mới theo phút
+    const bust = Math.floor(Date.now() / REFRESH_WINDOW);
+
+    const params = new URLSearchParams(location.search);
+    const slug = params.get('pminmod');
+
+    function fallbackTitle(s){ return String(s||'').replace(/[-_]/g,' ').trim(); }
+
+    async function load(){
+      const box = document.getElementById('content');
+      if(!slug){
+        box.innerHTML = `<div class="pad"><div class="title">Thiếu tham số</div><p>Hãy mở với <code>?pminmod=&lt;slug&gt;</code>.</p></div>`;
+        return;
+      }
+
+      try{
+        const url = new URL(JSON_PATH, location.href);
+        url.searchParams.set('t', bust);
+        const res = await fetch(url, { cache: 'no-store' });
+        const data = await res.json();
+        const item = data[slug];
+
+        if(!item){
+          box.innerHTML = `<div class="pad"><div class="title">Không tìm thấy: ${slug}</div><p>Kiểm tra lại slug trong <code>news.json</code>.</p></div>`;
+          return;
+        }
+
+        // Lấy title từ JSON (mới), fallback sang slug nếu thiếu
+        const title = item.title || fallbackTitle(slug);
+        const img   = item.img   || 'ico.jpg';
+        const link  = item.link  || '#';
+
+        // Không hiển thị 'info' theo yêu cầu
+        box.innerHTML = `
+          <div class="hero"><img src="${img}" alt="${title}"></div>
+          <div class="pad">
+            <div class="title">${title}</div>
+            <div class="slug">Mã: <code>${slug}</code></div>
+
+            <div class="noteBox">
+              <h3>Ghi chú</h3>
+              <ul id="notes">
+                <li>1. Cam xa: Đây là bản mod skin đã được tích hợp sẵn mod cam xa.</li>
+                <li>2. Mạnh: Đây là bản mod đầy đủ tất cả hiệu ứng, âm thanh, gia tốc, biến về, điệu nhảy riêng (nếu có), load trận tốc độ bình thường, fix khung đầu game. Nhưng bản mod này cần hiệu năng máy tốt để đảm bảo trải nghiệm chơi game.</li>
+                <li>3. Trung bình & Yếu: Tương tự với bản mạnh nhưng bản này đã lược bỏ đi gia tốc, biến về, điệu nhảy riêng nhằm load trận nhanh hơn, giảm thiểu tình trạng giật lag khi chơi game, giúp trải nghiệm khi chơi game mượt mà nhất.</li>
+              </ul>
+            </div>
+
+            <div class="actions">
+              <a class="btn btn-primary" id="dlbtn" href="${link}" target="_blank" rel="noopener">Tải ngay</a>
+              <a style="display: none" class="btn btn-outline" href="${link}" target="_blank" rel="noopener">Mở link gốc</a>
+            </div>
+          </div>
+        `;
+
+        // nếu JSON có mảng notes thì thay thế
+        if (Array.isArray(item.notes) && item.notes.length){
+          const ul = document.getElementById('notes');
+          ul.innerHTML = item.notes.map(x => `<li>${String(x)}</li>`).join('');
+        }
+
+        // gắn link cho “tại đây”
+        document.getElementById('dltext').href = link;
+
+      }catch(err){
+        document.getElementById('content').innerHTML =
+          `<div class="pad"><div class="title">Lỗi tải dữ liệu</div><p>Không đọc được <code>${JSON_PATH}</code>.</p></div>`;
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>
