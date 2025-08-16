@@ -10,5 +10,11 @@
     "img": "img_product/ico.jpg",
     "info": "Chuyên mục: Công nghệ • Tác giả: A • Tóm tắt: …",
     "link": "https://abc.com"
+  },
+  "mod-3": {
+    "title": "Thử Nghiệm",
+    "img": "",
+    "info": "hihi",
+    "link": "https://www.youtube.com/watch?v=3EMy34lNFJo"
   }
 }
