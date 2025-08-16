@@ -1,14 +1,14 @@
 {
-  "mod-1": {
-    "title": "Bài viết về công nghệ",
-    "img": "img_product/ico.jpg",
-    "info": "Chuyên mục: Công nghệ • Tác giả: A • Tóm tắt: …",
-    "link": "https://abc.com"
-  },
   "mod-2": {
     "title": "Bài viết về game",
     "img": "img_product/ico.jpg",
     "info": "Chuyên mục: Game • Tác giả: B • Tóm tắt: …",
+    "link": "https://abc.com"
+  },
+  "mod-1": {
+    "title": "Bài viết về công nghệ",
+    "img": "img_product/ico.jpg",
+    "info": "Chuyên mục: Công nghệ • Tác giả: A • Tóm tắt: …",
     "link": "https://abc.com"
   }
 }
