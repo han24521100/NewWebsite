@@ -12,7 +12,7 @@
     :root{
       --bg:#ffdde8;--card:#1b1b1b;--cardSoft:#232323;--accentSoft:#ffb6d2;
       --text:#f5f5f7;--muted:#c9c9d1;--radius:14px;--shadow:0 10px 25px rgba(0,0,0,.25)
-    }
+    ;--thumbH:100px}
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
@@ -34,6 +34,8 @@
     .noteBox ul{margin:0;padding-left:18px}
     .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
     .muted{color:#7a0033}
+    .imgList{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:flex-start;margin-top:8px}
+    .imgList img{height:var(--thumbH);min-height:var(--thumbH);object-fit:cover;border-radius:12px;display:block;box-shadow:0 4px 12px rgba(0,0,0,.25)}
     @media (hover:none){ .card:hover{ transform:none } }
     @media (prefers-reduced-motion: reduce){
       *{animation:none!important;transition:none!important}
@@ -101,6 +103,8 @@
                 <li>2. Group Telegram: <a href = "https://t.me/AutoModKatakana">Tại đây</a></li>
                 <li>3. Shop Acc Liên Quân Uy Tín Giá Rẻ Chỉ Từ 100đ: <a href = "https://modskinpro.shop/">Tại đây</a></li>
               </ul>
+              <h3 id="listTitle" style="margin-top:12px">List</h3>
+              <div id="imgList" class="imgList" aria-label="Danh sách ảnh từ ID"></div>
               <br>
               <h3>Ghi chú</h3>
               <ul id="notes">
@@ -122,6 +126,36 @@
           const ul = document.getElementById('notes');
           ul.innerHTML = item.notes.map(x => `<li>${String(x)}</li>`).join('');
         }
+
+        
+        // render hình từ 'list' -> mỗi dòng một ID -> ảnh .jpg
+        
+        // render hình từ 'list' -> mỗi dòng là một ID (loại bỏ mọi dấu cách). Ẩn nếu không có list.
+        function renderListFromItem(item){
+          const wrap = document.getElementById('imgList');
+          const title = document.getElementById('listTitle');
+          if(!wrap || !title) return;
+
+          const raw = (item && item.list) ? String(item.list) : "";
+          const ids = raw.split(/\r?\n/)
+                         .map(s => s.trim().replace(/\s+/g,''))  // bỏ hết dấu cách trong ID
+                         .filter(Boolean);
+
+          if(!ids.length){
+            wrap.style.display = 'none';
+            title.style.display = 'none';
+            return;
+          }
+
+          const BASE = 'https://dl.ops.kgtw.garenanow.com/CHT/HeroTrainingLoadingNew_B36/';
+          wrap.innerHTML = ids.map(id => {
+            const url = BASE + encodeURIComponent(id) + '.jpg';
+            return `<img src="${url}" alt="ID ${id}"/>`;
+          }).join('');
+        }
+
+        renderListFromItem(item);
+
 
         // gắn link cho “tại đây”
         document.getElementById('dltext').href = link;
