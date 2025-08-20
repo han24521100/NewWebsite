@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mã hoá/giải mã liên kết qua ?api=</title>
+  <style>
+    :root{--bg:#0f172a;--fg:#e5e7eb;--muted:#94a3b8;--card:#111827;--accent:#22d3ee;}
+    html,body{height:100%}
+    body{margin:0;background:linear-gradient(180deg,#0b1020,#0f172a);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;display:flex;align-items:center;justify-content:center;padding:24px}
+    .card{max-width:780px;width:100%;background:rgba(17,24,39,.7);backdrop-filter:blur(8px);border:1px solid #1f2937;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.35);padding:20px}
+    h1{margin:0 0 10px;font-size:24px}
+    p{margin:6px 0 14px;color:var(--muted)}
+    label{font-weight:600}
+    input[type="url"], input[type="text"], textarea{width:100%;padding:12px 14px;border-radius:12px;border:1px solid #374151;background:#0b1220;color:#dbeafe;outline:none}
+    input:focus, textarea:focus{border-color:#60a5fa;box-shadow:0 0 0 3px rgba(96,165,250,.15)}
+    .row{display:flex;gap:10px;align-items:center}
+    .btn{cursor:pointer;border:1px solid #334155;background:#0ea5e9;color:white;padding:10px 14px;border-radius:12px;font-weight:600}
+    .btn:active{transform:translateY(1px)}
+    .ghost{border-color:#334155;background:#0b1220}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
+    .muted{color:var(--muted)}
+    .out{background:#0b1220;border:1px dashed #334155;padding:12px;border-radius:12px;word-break:break-all}
+    .hint{font-size:12px;color:#9ca3af}
+    .hidden{display:none}
+    .ok{color:#22c55e}
+    .bad{color:#ef4444}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div id="mode-form" class="">
+      <h1>🔐 Mã hoá & chuyển hướng bằng <span class="mono">?api=</span></h1>
+      <p>Nhập URL cần mã hoá. Kết quả là chuỗi Base64URL (không có ký tự lạ) và đường dẫn rút gọn dạng <span class="mono">?api=&lt;mã&gt;</span>.</p>
+
+      <label for="url">Liên kết (URL)</label>
+      <input id="url" type="url" placeholder="https://ví-dụ.com/bài-viết?x=1" autocomplete="off" />
+
+      <div class="row" style="margin-top:10px">
+        <button class="btn" id="btn-enc">Mã hoá</button>
+        <button class="btn ghost" id="btn-clear">Xoá</button>
+      </div>
+
+      <div id="result" class="hidden" style="margin-top:16px">
+        <p class="muted">Chuỗi mã hoá:</p>
+        <div class="out mono" id="encoded"></div>
+        <div class="row" style="margin-top:10px">
+          <button class="btn" id="copy-enc">Copy mã</button>
+        </div>
+
+        <p class="muted" style="margin-top:16px">Link rút gọn (dùng kèm file này):</p>
+        <div class="out mono" id="short-link"></div>
+        <div class="row" style="margin-top:10px">
+          <button class="btn" id="copy-link">Copy link ?api=</button>
+          <a class="btn ghost" id="open-link" href="#" target="_blank" rel="noopener">Mở thử tab mới</a>
+        </div>
+        <p class="hint">Gợi ý: upload file này lên GitHub Pages, sau đó dùng link <span class="mono">https://tên-site/ma_hoa_link.html?api=&lt;mã&gt;</span></p>
+      </div>
+    </div>
+
+    <div id="mode-decode" class="hidden">
+      <h1>🧭 Đang xử lý chuyển hướng…</h1>
+      <p class="muted">Đọc tham số <span class="mono">?api=</span>, giải mã → kiểm tra → chuyển hướng.</p>
+      <div id="status"></div>
+      <div id="decoded-wrap" class="hidden" style="margin-top:14px">
+        <p class="muted">Nội dung đã giải mã (không chuyển hướng vì không hợp lệ hoặc bị chặn):</p>
+        <div class="out mono" id="decoded"></div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <a class="btn ghost" href="./">⬅ Về trang mã hoá</a>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ===== Base64URL helpers (Unicode-safe) ===== */
+const textEncoder = new TextEncoder();
+const textDecoder = new TextDecoder();
+
+/** Encode string to Base64URL (no padding) */
+function toBase64Url(str) {
+  const bytes = textEncoder.encode(str);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  const b64 = btoa(binary);
+  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+/** Decode Base64URL to string */
+function fromBase64Url(b64url) {
+  if (typeof b64url !== "string" || b64url.length === 0) throw new Error("Empty api");
+  let b64 = b64url.replace(/-/g, "+").replace(/_/g, "/");
+  // pad
+  const pad = b64.length % 4;
+  if (pad === 2) b64 += "==";
+  else if (pad === 3) b64 += "=";
+  else if (pad !== 0) throw new Error("Bad Base64 padding");
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return textDecoder.decode(bytes);
+}
+
+/* ===== URL validation & redirect ===== */
+function isLikelyUrl(s) {
+  try {
+    const u = new URL(s);
+    return ["http:", "https:"].includes(u.protocol);
+  } catch { return false; }
+}
+
+function tryRedirect(urlStr) {
+  // Use replace() so history không lưu trang trung gian
+  window.location.replace(urlStr);
+  // Lưu ý: Không có cách tin cậy 100% để biết redirect có “thành công” hay bị chặn,
+  // nên ta sẽ chỉ thực hiện nếu URL hợp lệ. Nếu không hợp lệ → hiển thị nội dung.
+}
+
+/* ===== UI logic ===== */
+const qs = new URLSearchParams(location.search);
+const api = qs.get("api");
+const el = (id) => document.getElementById(id);
+
+if (api) {
+  // Decode mode
+  el("mode-form").classList.add("hidden");
+  el("mode-decode").classList.remove("hidden");
+
+  (function handleDecode() {
+    const status = el("status");
+    try {
+      const decoded = fromBase64Url(api);
+      if (isLikelyUrl(decoded)) {
+        status.innerHTML = `<p class="ok">✅ Giải mã OK. Đang chuyển hướng tới: <span class="mono">${escapeHtml(decoded)}</span></p>`;
+        // Chờ 30ms để người dùng thấy thông báo rồi chuyển
+        setTimeout(() => tryRedirect(decoded), 30);
+      } else {
+        status.innerHTML = `<p class="bad">⚠️ Không phải URL hợp lệ. Không chuyển hướng.</p>`;
+        el("decoded").textContent = decoded;
+        el("decoded-wrap").classList.remove("hidden");
+      }
+    } catch (e) {
+      status.innerHTML = `<p class="bad">❌ Lỗi giải mã: <span class="mono">${escapeHtml(String(e.message || e))}</span></p>`;
+      el("decoded").textContent = "(không có dữ liệu giải mã được)";
+      el("decoded-wrap").classList.remove("hidden");
+    }
+  })();
+} else {
+  // Form mode
+  el("mode-form").classList.remove("hidden");
+  el("mode-decode").classList.add("hidden");
+
+  el("btn-enc").addEventListener("click", () => {
+    const url = el("url").value.trim();
+    if (!isLikelyUrl(url)) {
+      alert("Vui lòng nhập URL hợp lệ, ví dụ: https://example.com/path?x=1");
+      return;
+    }
+    const enc = toBase64Url(url);
+    const short = makeShortLink(enc);
+    el("encoded").textContent = enc;
+    el("short-link").textContent = short;
+    el("open-link").href = short;
+    el("result").classList.remove("hidden");
+  });
+
+  el("btn-clear").addEventListener("click", () => {
+    el("url").value = "";
+    el("result").classList.add("hidden");
+  });
+
+  el("copy-enc").addEventListener("click", () => copyText(el("encoded").textContent, "Đã copy mã!"));
+  el("copy-link").addEventListener("click", () => copyText(el("short-link").textContent, "Đã copy link!"));
+}
+
+/* ===== helpers ===== */
+function makeShortLink(enc) {
+  // Giữ nguyên origin + path hiện tại, chỉ thêm ?api=
+  const loc = window.location;
+  const base = loc.origin + loc.pathname.replace(/[#?].*$/,"");
+  return `${base}?api=${enc}`;
+}
+
+function copyText(text, okMsg) {
+  if (!text) return;
+  navigator.clipboard?.writeText(text).then(
+    () => toast(okMsg),
+    () => fallbackCopy(text)
+  );
+}
+
+function fallbackCopy(text) {
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand("copy"); toast("Đã copy!"); }
+  catch { alert("Copy thất bại, hãy tự bôi đen và copy."); }
+  document.body.removeChild(ta);
+}
+
+function toast(msg) {
+  const t = document.createElement("div");
+  t.textContent = msg;
+  Object.assign(t.style, {
+    position:"fixed", left:"50%", bottom:"24px", transform:"translateX(-50%)",
+    background:"#111827", color:"#e5e7eb", border:"1px solid #374151",
+    padding:"10px 14px", borderRadius:"12px", zIndex:9999
+  });
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), 1200);
+}
+
+function escapeHtml(s){
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+</script>
+</body>
+</html>
