@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PminMod - Bio Link</title>
+    <style>
+        /* CSS Styling */
+        :root {
+            /* Màu Xanh Dương Chủ Đạo */
+            --main-bg-color: #e6f0ff; /* Light Blue Background */
+            --card-bg-color: #cce0ff; /* Slightly Darker Card Background */
+            --card-hover-color: #a3c9ff; /* Hover/Active Color */
+            --text-color: #1a4d8c; /* Dark Blue Text */
+            --accent-color: #007bff; /* Primary Blue for Links/Emphasis */
+            --note-color: #4c5a6b; /* Greyish Blue for Notes */
+            --avatar-border-color: #0056b3; /* Darker Blue Border */
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--main-bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+        }
+
+        /* Avatar */
+        .avatar-container {
+            padding: 20px;
+        }
+
+        .avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid var(--avatar-border-color);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Main Title */
+        h1 {
+            color: #0056b3;
+            font-size: 1.8em;
+            margin: 10px 0 5px 0;
+        }
+
+        /* Subtitle/Slogan */
+        .slogan {
+            font-size: 1em;
+            color: #333333;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+
+        /* Link Cards */
+        .link-card {
+            display: flex;
+            align-items: center;
+            background-color: var(--card-bg-color);
+            color: var(--text-color);
+            padding: 15px 20px;
+            margin-bottom: 15px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.1em;
+            transition: background-color 0.2s, transform 0.2s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .link-card:hover {
+            background-color: var(--card-hover-color);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+        }
+
+        .link-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            margin-right: 15px;
+            object-fit: cover;
+        }
+
+        /* Notes Section */
+        .notes-section {
+            margin-top: 40px;
+            font-size: 0.9em;
+            color: var(--note-color);
+        }
+
+        .notes-section p {
+            margin: 5px 0;
+        }
+
+        .highlight-note {
+            font-weight: bold;
+            color: #cc0000; /* Dùng màu đỏ nổi bật cho số điện thoại */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="avatar-container">
+            <img src="https://avatars.githubusercontent.com/u/242817914?s=48&v=4" alt="Avatar PminMod" class="avatar">
+        </div>
+
+        <h1>NT106.Q12-2 | Nhóm 5</h1>
+
+        <p class="slogan">22521251 - 24520262 - 24521100</p>
+
+        <a href="#" class="link-card">
+            <img src="https://avatars.githubusercontent.com/u/162940374?v=4" alt="Icon YouTube Pmin Mod" class="link-icon">
+            Son Nguyen | NDTSon 
+        </a>
+
+        <a href="#" class="link-card">
+            <img src="https://avatars.githubusercontent.com/u/203421317?v=4" alt="Icon YouTube Nam Nguyên Mod" class="link-icon">
+            Nguyen Tan Danh | NTDanh-it
+        </a>
+
+        <a href="#" class="link-card">
+            <img src="https://avatars.githubusercontent.com/u/181550770?v=4" alt="Icon YouTube Ngân Ngân Mod" class="link-icon">
+            DOAN NGUYEN HA NAM | v
+        </a>
+
+    </div>
+
+</body>
+</html>
